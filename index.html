@@ -368,16 +368,6 @@
         console.log(final)
 
         // Huh, so apparently fetch() doesn't allow specifying response timeout and the default is ~2 minutes which is generally less than what the scraper needs to resolve everything so I have to 
-
-        /* searchResults = (await (await fetch("./api", {
-            method: "POST",
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(final),
-            timeout: 60 * 60 * 1000
-        })
-            .catch(e => ({ error: "Failed server request" }))
-        ).json().catch(e => e)) // For now, I don't care about the indexers */
-
         socket.emit("query", final)
     }
 
@@ -393,9 +383,9 @@
             // Only keep categories which were in the final choice
             for (let i = 0; i < searchResults.length; i++) {
                 searchResults[i]["index"] = i + 1 //101
-                searchResults[i].Category = searchResults[i].Category.filter(a => final.categories.includes(a.toString())).map(a => parseInt(a))
 
-
+                let cat = searchResults[i].Category.filter(a => final.categories.includes(a.toString())).map(a => parseInt(a))
+                searchResults[i].Category = cat.length > 0 ? cat : searchResults[i].Category
             }
 
             render()
@@ -434,10 +424,12 @@
             let currentIndexerID = a.getAttribute("section-id")
             let currentIndexerName = a.getAttribute("section-name")
 
+            console.log(currentIndexerID, currentIndexerName)
+
             a.querySelectorAll('button').forEach(b => {
                 if (
                     // Filter via indexers
-                    !(final.indexers.length == 0 ||
+                    !(final.indexers.length == 0 || currentIndexerName.toLowerCase().includes(filterQ) ||
                         (currentIndexerID == "default" && filterQ.length == 0) || // ensure that all default categories are always displayed
                         (
                             final.indexers.includes(currentIndexerID) && // Don't show unless parent indexers is in final object
@@ -660,13 +652,21 @@
 
         let all = Object.values(res.categories).reduce((a, c) => [...(a == undefined ? [] : a), ...c.map(b => parseInt(b[1]))], [])
         unique = Array.from(new Set(all))
+
         console.log(unique)
+
+
+        // Toggle default options
+        let preference = {
+            categories: ["2000"],
+            indexers: ["rarbg", "yts"]
+        }
 
         // Enable all movie related options
         Object.keys(categoryElements).forEach(a => {
 
             categoryElements[a].querySelectorAll("button").forEach(b => {
-                if ((a.toLowerCase().includes("movie") || b.textContent.toLowerCase().includes("movie")) && !final.categories.includes(b.getAttribute("data-id"))) {
+                if (preference.categories.includes(b.getAttribute("data-id"))) {
 
                     toggle("categories", b.getAttribute("data-id"))
                     b.style.backgroundColor = colors[0]
@@ -676,6 +676,19 @@
             })
 
         })
+
+        // Enable preferred indexer
+        document.getElementById('indexers').querySelectorAll("button").forEach(a => {
+
+            if (preference.indexers.includes(a.getAttribute("data-id"))) {
+
+                toggle("indexers", a.getAttribute("data-id"))
+                a.style.backgroundColor = colors[0]
+
+                filter()  // Incase some of the preemptively selected options aren't unique
+            }
+        })
+
 
         console.log(final)
     })()
