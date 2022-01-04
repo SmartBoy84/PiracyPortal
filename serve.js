@@ -13,10 +13,10 @@ const app = express()
 app.use(express.json());
 app.use(pretty({ query: 'pretty' }));
 
-app.use("/assets", express.static('assets'))
+app.use("/assets", express.static(path.join(__dirname, 'assets')))
 
 let torrentCache = "torrentcache"
-app.use(`/${torrentCache}`, express.static(torrentCache))
+app.use(`/${torrentCache}`, express.static(path.join(__dirname, torrentCache)))
 
 const server = require('http').createServer(app);
 
@@ -166,6 +166,7 @@ app.get("/path/:id/:tracker/:name", async (req, res) => {
     }
     else {
       let url
+      let found = true
 
       if (reply.statusCode == 302) { // if redirected to a magnet link
 
@@ -176,26 +177,26 @@ app.get("/path/:id/:tracker/:name", async (req, res) => {
       else if (reply.body) { // if data was returned then assume torrent file
 
         console.log("Jackett returned a torrent file!")
-        url = `/${torrentCache}/${req.params.name}.torrent`
+        url = path.join(__dirname, torrentCache, `${req.params.name}.torrent`)
 
         // Create torrentcache dir if non-existent
-        if (!fss.existsSync(`./${torrentCache}`)) {
-          await fs.mkdir(`./${torrentCache}`).catch(e => {
+        if (!fss.existsSync(path.join(__dirname, torrentCache))) {
+          await fs.mkdir(path.join(__dirname, torrentCache)).catch(e => {
             console.log("Failed to create torrentcache dir")
 
             res.send(e)
-            return
+            found = false
           })
         }
 
-        if (!fss.existsSync(`.${url}`)) {
+        if (!fss.existsSync(url)) {
           console.log("File not found in cache, downloading...")
 
-          await fs.writeFile(`.${url}`, reply.body).catch(e => {
+          await fs.writeFile(url, reply.body).catch(e => {
             console.log("Failed to write torrent to disk")
 
             res.send(e)
-            return
+            found = false
           })
         }
       }
@@ -204,7 +205,9 @@ app.get("/path/:id/:tracker/:name", async (req, res) => {
         res.send(reply)
       }
 
-      res.redirect(url)
+      if (found == true) {
+        res.redirect(`/${torrentCache}/${req.params.name}.torrent`)
+      }
     }
 
   })
