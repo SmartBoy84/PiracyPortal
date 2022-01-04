@@ -1,0 +1,63 @@
+Features:
+
+By default all trackers are selected and all categories with "movie" in their names are selected
+
+Button next to input box allows selection of all present categories
+Typing in the input box allows filtering categories
+If new list of categories are not all checked then button becomes red to indicate that
+
+Since, torrent trackers used the same IDs for their custom categories, I ensure that when one is checked the other disappears (clicking button to check everything also ensures this - the first appearance of a visible and activated button takes precedence)
+
+Specifiying trackers by selecting them narrows the choice to those trackers + default categories
+All choices checked before that aren't part of the tracker's categories are removed from final query and the selection view but selecting the appropriate tracker or deselecting all trackers (indicating selection of all trackers) brings them back - I.e., your previous choice is remembered
+
+When clicking button to select all categories, the number of active buttons on screen is counted and if they are the majority then the state to set all buttons is ![their state] else if minority it's their state
+
+If a heading contains no buttons then it is removed from view
+
+
+Button to select all categories selects everything CURRENTLY in the search container even if the tracker heading doesn't contain all it's categories
+
+Filter query allows you to specify either a tracker OR a particular category name
+
+Categories are updated daily by scraping each site
+
+Each category for the tracker's only contains custom categories
+
+API endpoints are at:
+./api
+         /info
+         /guide
+         /request
+./features.txt
+
+Cool screen while searching (potentially add a cancel button)
+
+
+In dev I hit a huge road block when I couldn't figure why 3/4 of the time searching something would fail with a timeout, after several hours of searching I finally found that most browser runtimes (firefox, chrome, safari etc) have hard coded timeouts which cannot be changed
+In order to bypass this restriction and allows for search requests which would inevitably take longer than 90 seconds (chrome's timeout) I use websockets (socket.io)
+
+_____________
+
+For filter() function:
+            /*
+            Ok, so in the following there's a few hacky fixes I'd like to document in case I ever come back to this in the future:
+            First the indexer and filter and query filter needed to be seperate because in the indexer filter I actually turn off the category rather than just hide it from view since it involves an actual selection of an indexer by the user
+            
+            Second of all it turns out that 1000 different numbers were not enough for the torrenting sites to choose from and they instead mostly stuck around the first 10100 so I needed to ensure that any overlaps were hidden in order to prevent a deceptive list of choices
+            I do this by first checking if a particular ID is in the set of unique IDs I generated at the start
+            If they aren't (unique) then I check if their ID is in the repetitions array, if not then if the button is on, add it to the array and return true
+            
+            If a button ID fails either of these checks it is hidden and toggled off
+
+            At the end, if none of the parent divs children's survived the checks then I turn it off in order to prevent a list of empty headings
+            
+            */
+
+
+
+
+
+
+When selecting all the categories, I faced the issue of categories remembered to be true coming back after their complementary repeats. In order to resolve this I used a while loop to recursively loop over the categories and run a filter() each time until all the currently visible category buttons had the chosen state (this usually runs ~4 times and there's several safeguards to prevent infinite looping)
+

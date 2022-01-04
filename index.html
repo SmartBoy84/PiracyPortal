@@ -1,0 +1,679 @@
+<html>
+
+<head>
+    <title>The sk0ut</title>
+
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon-16x16.png">
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="theme-color" content="#ffffff">
+
+    <style>
+        body {
+            background-color: beige;
+        }
+
+        #main {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            flex-direction: column;
+
+            min-height: 100%;
+            max-width: 100%;
+
+        }
+
+        button {
+            border-radius: 5px;
+            padding: 5px;
+            font-weight: 700;
+            margin: 3px;
+        }
+
+        .title {
+            font-size: 35px;
+            font-weight: bolder;
+            text-align: center;
+        }
+
+        #setting {
+
+            width: 30%;
+            border: 2px black solid;
+            border-radius: 5px;
+            background: aliceblue;
+            padding: 6px;
+
+        }
+
+        .heading {
+            padding-top: 3px;
+            display: block;
+            font-weight: bold;
+        }
+
+        #setting>div:not(:first-child):not(:last-child) {
+            margin-top: 6px;
+            padding-top: 5px;
+            border-top: 1px black solid;
+
+            display: none;
+        }
+
+        .subheading {
+            margin-top: 13px;
+            font-weight: bolder;
+            color: green;
+        }
+
+        input {
+            width: 100%;
+
+            height: 30px;
+            border-width: 2px;
+            border-radius: 5px;
+
+            border-color: black;
+        }
+
+        #searchButton {
+            margin-bottom: 6px;
+        }
+
+        #search {
+            margin-top: 6px;
+
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin-bottom: 0;
+        }
+
+        #search>button {
+            width: 25%;
+            margin-top: 6px;
+        }
+
+        #query {
+            margin-right: 3px;
+            margin-left: 3px;
+        }
+
+        #loading {
+            font-size: 21px;
+            font-weight: bold;
+            margin-top: -50px;
+        }
+
+        #loading>div {
+            margin-top: 15px;
+            margin-bottom: 4px;
+            font-weight: 400;
+        }
+
+        #loading>div>span {
+            background-color: aliceblue;
+            border: 2px black solid;
+            border-radius: 5px;
+            padding-left: 5px;
+            padding-right: 5px;
+            font-size: 28px;
+
+            padding-bottom: 3px;
+            padding-top: 2px;
+        }
+
+        #categories {
+            max-height: 570px;
+            overflow: scroll;
+            overflow-x: hidden;
+        }
+
+        #filter {
+            display: flex;
+            flex-direction: row;
+            position: -webkit-sticky;
+            /* Safari */
+            position: sticky;
+            padding-top: 10px;
+            top: -10;
+            background-color: aliceblue;
+            overflow-x: hidden;
+            max-width: 100%;
+            gap: 5px;
+
+        }
+
+        #filter>button {
+            padding: 0;
+            margin: 0;
+
+            margin-right: 5;
+            width: 40px;
+
+            background-color: coral;
+        }
+
+        #filter>input {
+            margin-left: 10px;
+        }
+
+        #filter>* {
+            border-width: 2px;
+            border-radius: 5px;
+
+            font-size: 15px;
+            font-weight: bold;
+        }
+
+        table {
+            border-collapse: collapse;
+            max-width: 80%;
+            margin-top: 20px;
+        }
+
+        th {
+            font-weight: bold;
+        }
+
+        td,
+        th {
+            background: aliceblue;
+
+            border: 2px black solid;
+            text-align: center;
+            padding: 5px;
+
+        }
+
+        th>a {
+            color: black;
+            padding: 3px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="main">
+
+        <!-- Settings page -->
+        <div id="setting">
+            <span class="title"><img style="margin-right:8px; width: 40px; transform: rotate(-10deg);"
+                    src="./assets/hat.png">The sk0ut<img style="margin-left:8px; width: 40px; transform: rotate(10deg);"
+                    src="./assets/hat.png"></span>
+            <div>*Not checking anything in the following sections assumes selection of everything</div>
+            <div id="indexers">
+                <span class="heading">Trackers:</span>
+            </div>
+
+            <div id="categories">
+                <span class="heading">Categories:</span>
+
+                <div id="filter">
+                    <input type="text" id="filtersearch">
+                    <button id="counter">0</button>
+                </div>
+            </div>
+
+            <div id="search">
+                <input type="text" id="query">
+                <button onclick="submit()">Search</button>
+                <span id="resultcounter" class="heading" style="font-size: 20px;"></span>
+                <button id="hide" showing="0">Show</button>
+            </div>
+
+        </div>
+
+        <!-- Loading -->
+        <div style="display:none" class="title" id="loading"></div>
+
+        <!-- Results -->
+        <table id="results" style="display:none"></table>
+    </div>
+</body>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+    var socket = io();
+
+    let colors = ["greenyellow", "coral"] // True/false
+
+    let loading = document.getElementById("loading")
+    let setting = document.getElementById("setting")
+    let results = document.getElementById("results")
+
+
+    // Render results
+    let handlers = {
+        "Published": [
+            (a) => new Date(a.PublishDate).toLocaleDateString("en-AU"),
+            false,
+            (a) => searchResults.sort((c, d) => (new Date(c.PublishDate) - new Date(d.PublishDate)) * (handlers[a][1] ? -1 : 1))
+        ],
+        "Tracker": [
+            (a) => a.Tracker,
+            false,
+            (a) => searchResults.sort((c, d) => {
+                let x = c.Tracker.toUpperCase()
+                let y = d.Tracker.toUpperCase()
+
+                return ((x < y) ? -1 : (x > y) ? 1 : 0) * (handlers[a][1] ? -1 : 1)
+            })
+
+        ],
+        "Name": [
+            (a) => `<a style="font-weight:bold" href="${a.MagnetUri == null ? a.Link : a.MagnetUri}">${a.Title}</a>`,
+            false,
+            (a) => searchResults.sort((c, d) => {
+                let x = c.Title.toUpperCase()
+                let y = d.Title.toUpperCase()
+
+                return ((x < y) ? -1 : (x > y) ? 1 : 0) * (handlers[a][1] ? -1 : 1)
+            })
+        ],
+        "Category": [
+            (a) => a.Category[0] < 9000 ? catNames[a.Category[0]] : res.categories[a.Tracker].find(b => parseInt(b[1]) == a.Category[0])[0],
+            false,
+            (a) => searchResults.sort((c, d) => (c.Category[0] - d.Category[0]) * (handlers[a][1] ? -1 : 1))
+        ],
+        "Size": [
+            (a) => a.Size < 1000000000 ? `${Math.round(a.Size / 1000000)} MB` : `${Math.round((a.Size / 1000000000) * 100) / 100 /* GB */} GB`, // size is given in bytes
+            false,
+            (a) => searchResults.sort((c, d) => (c.Size - d.Size) * (handlers[a][1] ? -1 : 1))
+        ],
+        "S.": [
+            (a) => a.Seeders,
+            false,
+            (a) => searchResults.sort((c, d) => (c.Seeders - d.Seeders) * (handlers[a][1] ? -1 : 1))
+        ],
+        "L.": [
+            (a) => a.Peers,
+            false,
+            (a) => searchResults.sort((c, d) => (c.Peers - d.Peers) * (handlers[a][1] ? -1 : 1))
+        ]
+    }
+
+    function handle(name) {
+        results.querySelectorAll("th>a").forEach(a => a.style.backgroundColor = a.textContent == name ? colors[0 + handlers[name][1]] : "transparent") // set everything else to transparent and toggle chosen color
+
+        Object.keys(handlers).forEach(a => handlers[a][1] = a == name ? !handlers[a][1] : false) // toggle chosen and set everything else to false
+
+        handlers[name][2](name)
+        order() // reorder table
+    }
+
+    let render = () => {
+        let table = document.getElementById("results")
+        table.setAttribute("id", "results")
+        table.innerHTML = ""
+
+        document.getElementById("resultcounter").textContent = `${searchResults.length} results found`
+
+        let heading = table.insertRow(-1)
+        Object.keys(handlers).forEach(a => heading.insertCell(-1).outerHTML = `<th><a href="javascript: void(0)" onclick="handle('${a}')">${a}</a></th>`)
+
+        Object.keys(handlers).forEach(a => handlers[a][1] = false)
+
+        order()
+    }
+
+    let order = () => {
+        results.querySelectorAll("tr:not(:first-child)").forEach(a => a.remove())
+
+        searchResults.forEach((a, i) => {
+            let row = results.insertRow(-1)
+            Object.values(handlers).forEach(b => row.insertCell(-1).innerHTML = `${b[0](a)}`)
+        })
+    }
+
+    // Submit query
+    let loadingView = (state) => {
+        loading.style.display = state ? "block" : "none"
+
+        setting.style.display = state ? "none" : "block"
+        results.style.display = state ? "none" : "block"
+    }
+
+    let submit = async () => {
+
+        if (final.query.replaceAll(" ", "").length == 0) { return } // Return if imput is empty
+
+        loadingView(true)
+        loading.innerHTML = `<div><img src="./assets/ship.gif"></div>Sailing the high seas in search of<div><span>${final.query}</span></div>`
+
+        console.log(final)
+
+        // Huh, so apparently fetch() doesn't allow specifying response timeout and the default is ~2 minutes which is generally less than what the scraper needs to resolve everything so I have to 
+
+        /* searchResults = (await (await fetch("./api", {
+            method: "POST",
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(final),
+            timeout: 60 * 60 * 1000
+        })
+            .catch(e => ({ error: "Failed server request" }))
+        ).json().catch(e => e)) // For now, I don't care about the indexers */
+
+        socket.emit("query", final)
+    }
+
+    // Getting results
+    socket.on('result', (msg) => {
+        console.log(msg)
+
+        if (Object.keys(msg).length == 2) {
+
+            searchResults = msg.Results
+            console.log("Success!")
+
+            // Only keep categories which were in the final choice
+            for (let i = 0; i < searchResults.length; i++) {
+                console.log(searchResults[i].Category)
+                searchResults[i].Category = searchResults[i].Category.filter(a => final.categories.includes(a.toString())).map(a => parseInt(a))
+            }
+
+            render()
+        }
+        else {
+            console.log("Request failed")
+
+            let heading = document.createElement("div")
+            heading.textContent = `Error: ${msg}`
+
+            results.appendChild(heading)
+        }
+
+        results.style.display = "block"
+        loadingView(false)
+    })
+
+    // Search type event
+    document.getElementById("query").addEventListener("keyup", function (event) {
+        if (event.keyCode === 13) {
+            event.preventDefault()
+            submit()
+        }
+        else {
+            final.query = this.value.trim()
+        }
+    })
+
+    // Category filter function
+    let filter = () => {
+        let repetitions = []
+
+        Object.values(categoryElements).forEach(a => {
+            let activated = false
+
+            let currentIndexerID = a.getAttribute("section-id")
+            let currentIndexerName = a.getAttribute("section-name")
+
+            a.querySelectorAll('button').forEach(b => {
+                if (
+                    // Filter via indexers
+                    !(final.indexers.length == 0 ||
+                        (currentIndexerID == "default" && filterQ.length == 0) || // ensure that all default categories are always displayed
+                        (
+                            final.indexers.includes(currentIndexerID) && // Don't show unless parent indexers is in final object
+                            final.indexers.some(c => res.indexers.find(d => d.id == c).caps.some(e => e["ID"] == b.getAttribute("data-id")))
+                        ))) {
+
+                    // If no indexer containing category is present then turn it off
+                    if (!repetitions.includes(b.getAttribute("data-id")) && final.categories.includes(b.getAttribute("data-id"))) {
+                        toggle("categories", b.getAttribute("data-id"))
+                        // b.style.backgroundColor = colors[1]
+
+                    }
+                    b.style.display = "none"
+                }
+                else if (
+
+                    // Filter via search query
+                    (
+                        filterQ.trim().length == 0 ||
+                        b.textContent.toLowerCase().includes(filterQ) ||
+                        currentIndexerName.toLowerCase().includes(filterQ)
+                    ) &&
+
+                    // Filter out non-unique categories
+                    (unique.includes(b.getAttribute("data.id")) || // check if already in array of unique categories
+                        (() => {
+                            if (!repetitions.includes(b.getAttribute("data-id"))) {
+                                if (b.style.backgroundColor == colors[0]) {
+                                    repetitions.push(b.getAttribute("data-id"))
+
+                                    // In case, it was toggled off by a repeating custom cat before this (it won't happen after since we add it to repetitions array)
+                                    if (!final.categories.includes(b.getAttribute("data-id"))) {
+                                        toggle("categories", b.getAttribute("data-id"))
+                                    }
+                                }
+
+                                return true
+                            }
+                            else { return false }
+                        })()
+                    )
+                ) {
+                    b.style.display = "inline"
+                    activated = true
+                }
+                else {
+                    b.style.display = "none"
+                } // Hide the button
+            })
+
+            a.style.display = activated ? "block" : "none"
+        })
+
+        setCounter()
+    }
+
+    // Set counter
+    let setCounter = () => {
+        let state = 0
+
+        document.getElementById("counter").textContent = Object.values(categoryElements).reduce((a, c) => {
+            let add = 0
+
+            c.querySelectorAll("button").forEach(a => {
+                if (a.style.display != "none") {
+                    if (a.style.backgroundColor == colors[0]) {
+                        add++
+                    }
+                    else if (state == 0) { state = 1 }
+                }
+            })
+
+            return a + add
+        }, 0)
+
+        document.getElementById("counter").style.backgroundColor = colors[state]
+    }
+
+    // Filter type
+    let filterQ = ""
+    document.getElementById("filtersearch").addEventListener("keyup", function () {
+        filterQ = this.value.trim().toLowerCase()
+        filter()
+    })
+
+    // Filter select all
+    document.getElementById("counter").addEventListener("click", function () {
+
+        let majority = []
+
+        Object.values(categoryElements).forEach(a => a.querySelectorAll("button").forEach(b => {
+
+            if (a.style.display != "none") {
+                majority.push(b.style.backgroundColor == colors[0])
+            }
+
+        }))
+
+        let state = majority.filter(a => a).length >= majority.length / 2
+        this.style.backgroundColor = colors[state + 0]
+
+        // Wipe out ALL the god damn feeble weak stragler pheasants *khraa thpoo* (that was me spitting) (this is probably the hackiest solution in my whole program)
+        for (let blip = true; blip;) {
+            blip = false
+
+            Object.values(categoryElements).forEach(a => a.querySelectorAll("button").forEach(b => {
+                if (b.style.display != "none") {
+                    if (b.style.backgroundColor != colors[state + 0]) {
+                        blip = true
+
+                        b.style.backgroundColor = colors[state + 0]
+                        let id = b.getAttribute("data-id")
+                        if (final.categories.includes(id) == state /* Haha, the minority rules!! */) { toggle("categories", id) }
+                    }
+                }
+            }))
+
+            filter()
+        }
+    })
+
+    // Hide/show settings page
+    document.getElementById("hide").addEventListener("click", function () {
+        let state = this.getAttribute("showing") == "1"
+
+        this.innerHTML = state ? "Show" : "Hide"
+        this.setAttribute("showing", 1 - state)
+
+        document.getElementById("setting").childNodes.forEach((a, i, d) => {
+            if (i < d.length - 2 && a.nodeName.toLowerCase() == "div") {
+                a.style.display = state ? "none" : "block"
+            }
+        })
+    }, false)
+
+    // Wrapper to toggle inclusion of value in final backend query
+    let toggle = (type, id) => {
+
+        if (final[type].includes(id)) { final[type] = final[type].filter(a => a != id) }
+        else { final[type].push(id) }
+
+    }
+
+    // Button click handlers (uglier than I'd like due to each section having unique requirements)
+    function bClick(ele) {
+        let type = this.getAttribute("data-type")
+        let id = this.getAttribute("data-id")
+
+        toggle(type, id)
+
+        this.style.backgroundColor = colors[1 - final[type].includes(id)]
+
+        // Section specific code
+        filter()
+    }
+
+    (async () => {
+
+        res = (await (await fetch('https://piracy.gabba.ga/api/info')).json()) // Populate res object
+        console.log(res)
+
+        catNames = Object.values(res.categories).flat().filter(a => parseInt(a[1]) < 9000).reduce((a, c) => ({ ...(a == undefined ? {} : a), [c[1]]: c[0] }), {})
+
+        // Template button div to populate
+        let buttons = document.createElement("div")
+        buttons.setAttribute("class", "buttons")
+
+        // Create a button with the proper ID
+        let createButton = (type, value, id) => {
+            let button = document.createElement("button")
+            button.setAttribute("data-type", type)
+            // button.setAttribute("data-index", index)
+            button.setAttribute("data-id", id)
+
+            button.addEventListener("click", bClick, false)
+            button.innerHTML = value
+
+            button.style.backgroundColor = colors[1]
+
+            return button
+        }
+
+        // Fill a section with buttons
+        let giveBirth = (x) =>
+            x.reduce((a, c) => {
+
+                a.appendChild(createButton(...c))
+                return a
+
+            }, buttons.cloneNode())
+
+
+        // Populating each section
+        //  Indexers
+        document.getElementById("indexers").appendChild(giveBirth(res.indexers.map((a, i) => ["indexers", a.name, a.id])))
+        // final.indexers = res.indexers.map(a => a.id)
+
+        // Categories
+        let cat = document.getElementById("categories")
+        Object.keys(res.categories).forEach(a => {
+
+            let heading = document.createElement("div")
+            let indexer = res.indexers.find(b => b.name == a)
+
+            console.log()
+            let parentIndexer = res.indexers.find(b => b.name == a)
+            heading.setAttribute("section-id", parentIndexer == undefined ? "default" : parentIndexer.id)
+
+            heading.setAttribute("section-name", a)
+
+            let text = document.createElement("div")
+            text.setAttribute("class", "subheading")
+            text.textContent = a
+
+            heading.appendChild(text)
+            heading.appendChild(giveBirth(res.categories[a].reduce((a, b) => [...(a == undefined ? [] : a), ["categories", ...b]], [])))
+
+            categoryElements[a] = cat.appendChild(heading)
+        })
+
+        let all = Object.values(res.categories).reduce((a, c) => [...(a == undefined ? [] : a), ...c.map(b => parseInt(b[1]))], [])
+        unique = Array.from(new Set(all))
+        console.log(unique)
+
+        // Enable all movie related options
+        Object.keys(categoryElements).forEach(a => {
+
+            categoryElements[a].querySelectorAll("button").forEach(b => {
+                if ((a.toLowerCase().includes("movie") || b.textContent.toLowerCase().includes("movie")) && !final.categories.includes(b.getAttribute("data-id"))) {
+
+                    toggle("categories", b.getAttribute("data-id"))
+                    b.style.backgroundColor = colors[0]
+
+                    filter()  // Incase some of the preemptively selected options aren't unique
+                }
+            })
+
+        })
+
+        console.log(final)
+    })()
+
+    // Empty API request object to fill
+    let final = {
+        query: "",
+        categories: [],
+        indexers: []
+    }
+
+    let res // Indexers + categories from backend
+    let categoryElements = {} // store all the button elements
+    let unique
+    let searchResults
+
+    let catNames
+
+</script>
+
+</html>
