@@ -278,7 +278,15 @@
             })
         ],
         "Category": [
-            (a) => a.Category[0] < 9000 ? catNames[a.Category[0]] : res.categories[a.Tracker].find(b => parseInt(b[1]) == a.Category[0])[0],
+            (a) => {
+                if (a.Category[0] < 9000) {
+                    return catNames[a.Category[0]]
+                }
+                else {
+                    let cat = res.categories[a.Tracker].find(b => parseInt(b[1]) == a.Category[0])
+                    return cat == undefined ? "Unlisted" : cat[0]
+                }
+            },
             false,
             (a) => searchResults.sort((c, d) => (c.Category[0] - d.Category[0]) * (handlers[a][1] ? -1 : 1))
         ],
@@ -374,7 +382,6 @@
 
             // Only keep categories which were in the final choice
             for (let i = 0; i < searchResults.length; i++) {
-                console.log(searchResults[i].Category)
                 searchResults[i].Category = searchResults[i].Category.filter(a => final.categories.includes(a.toString())).map(a => parseInt(a))
             }
 
