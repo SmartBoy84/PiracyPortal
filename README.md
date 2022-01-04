@@ -16,6 +16,7 @@
 * Through my ISP, most of the torrent sites were inaccessible; I bypassed this restriction by settings my router's DNS to cloudflares DNS (`1.1.1.1`)
 * If you're planning on proxying the app through Apache or some other hosting service then ensure that websockets are being proxied as well. You can verify this by checking the console for logs indicating failiure to connect to the backend (Socket.io pings every ~1 second so these should be regular)
 * I've disabled pornography related categories, if you want those categories enabled yet lack the experience to change the code yourself then just don't use this 🤷
+* To get Flaresolverr to work, you need to turn off system wide IPV6 as otherwise the IP header for the cloudflare captcha cookies mismatch and are rejected when used by Jackett. On linux (for the RPI), I followed this [guide](https://cwesystems.com/?p=231) 
 
 #### Developer notes ####
 For "detailed" ramblings about the various hacks and patches used to get this to work, checkout notes.md
