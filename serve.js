@@ -268,7 +268,7 @@ let search = async (query) => {
         }
       }
 
-      reply.Results = reply.Results.filter(a => !a.Category.some(b => query.categories.includes(b)))
+      // reply.Results = reply.Results.filter(a => !a.Category.some(b => query.categories.includes(b.toString())))
       cache[url] = reply
 
       console.log("Successfully fetched results from Jackett backend!")
