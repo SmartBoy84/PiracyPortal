@@ -22,4 +22,4 @@
 For "detailed" ramblings about the various hacks and patches used to get this to work, checkout notes.md
 
 * I use websockets to serve the results rather than traditional POST requests requests as Jackett usually takes longer than the hardcoded timeout limits set by the browser
-* API backend can be exposed at `./api[/info]` by it is disabled by default in favour of websockets
+* API backend can be exposed at `./api[/info]` but it is disabled by default in favour of websockets
