@@ -251,12 +251,15 @@ let search = async (query) => {
     reply = cache[url]
   }
   else {
-    reply = await fetch(url)
 
-    if (reply instanceof Error) { console.log("There was an error!") }
-    else {
+    try {
+      reply = await fetch(url)
+      if (reply instanceof Error) throw "Error fetching data"
 
-      reply = await (reply.data) //JSON parse
+      reply = await (reply.data)
+      if (reply instanceof Error) throw "Error parsing results"
+
+      if (reply == undefined || !Object.keys(reply).includes("Results")) throw "Malformed result object"
 
       // I have to fucking filter out porn again because for some fucking reason some torrent sites choose to return fucking pornography even if that category isn't specified
       reply.Results = reply.Results.filter(a => !(a.Category.some(b => badCats.includes(Math.round(parseInt(b) / 1000))) || bad.some(b => a.Title.toLowerCase().includes(b)))) // Remove pornography
@@ -269,11 +272,15 @@ let search = async (query) => {
       }
 
       // reply.Results = reply.Results.filter(a => !a.Category.some(b => query.categories.includes(b.toString())))
-      cache[url] = reply
-
+      cache[url] = reply // Store in cache in case of future requests
       console.log("Successfully fetched results from Jackett backend!")
+    }
+    catch (error) {
+      console.log(error)
+      return { error, reply } // I have to be super careful to handle the various exceptions that can occur in the program otherwise I risk crashing if given malformed data from Jackett's backend
     }
   }
 
   return reply
+
 }
