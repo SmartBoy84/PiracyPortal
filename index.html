@@ -129,7 +129,7 @@
         }
 
         #categories {
-            max-height: 570px;
+            max-height: 540px;
             overflow: scroll;
             overflow-x: hidden;
         }
@@ -332,12 +332,14 @@
 
         document.getElementById("resultcounter").textContent = `${searchResults.length} results found`
 
-        let heading = table.insertRow(-1)
-        Object.keys(handlers).forEach(a => heading.insertCell(-1).outerHTML = `<th><a href="javascript: void(0)" onclick="handle('${a}')">${a}</a></th>`)
+        if (searchResults.length > 0) {
+            let heading = table.insertRow(-1)
+            Object.keys(handlers).forEach(a => heading.insertCell(-1).outerHTML = `<th><a href="javascript: void(0)" onclick="handle('${a}')">${a}</a></th>`)
 
-        Object.keys(handlers).forEach(a => handlers[a][1] = false)
+            Object.keys(handlers).forEach(a => handlers[a][1] = false)
 
-        order()
+            order()
+        }
     }
 
     let order = () => {
