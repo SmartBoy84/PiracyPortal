@@ -328,7 +328,6 @@
 
     let render = () => {
         let table = document.getElementById("results")
-        table.setAttribute("id", "results")
         table.innerHTML = ""
 
         document.getElementById("resultcounter").textContent = `${searchResults.length} results found`
@@ -375,7 +374,9 @@
     socket.on('result', (msg) => {
         console.log(msg)
 
-        if (Object.keys(msg).length == 2) {
+        try {
+            if (msg instanceof Error) throw "Error"
+            if (!Object.keys(msg).includes("Results")) throw "Malformed results"
 
             searchResults = msg.Results
             console.log("Success!")
@@ -390,13 +391,9 @@
 
             render()
         }
-        else {
+        catch (e) {
             console.log("Request failed")
-
-            let heading = document.createElement("div")
-            heading.textContent = `Error: ${msg}`
-
-            results.appendChild(heading)
+            results.innerHTML = `<pre>${e}   ${JSON.stringify(msg)}</pre>`
         }
 
         results.style.display = "block"
