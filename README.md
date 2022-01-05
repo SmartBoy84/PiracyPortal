@@ -1,5 +1,5 @@
 # PiracyPortal
- Frontend & semi-backend wrapper for Jackett scraper
+ Frontend & semi-backend wrapper for the Jackett scraper
  
 ## Features ##
 * Scalable GUI
