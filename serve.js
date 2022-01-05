@@ -32,6 +32,7 @@ let base = "http://127.0.0.1:9117"
 let api = "api/v2.0"
 
 let source = axios.CancelToken.source()
+
 let fetch = async url => {
 
   // Apparently timeout in axios is reponse timeout not connection timeout
@@ -45,7 +46,9 @@ let fetch = async url => {
     url: `${base}/${api}/${url}`,
     method: "get",
     headers: {
-      Cookie: `jackett=${await loginCookie}`
+      Cookie: `jackett=${await ((
+        await (axios.get(`${base}/UI/login`, { withCredentials: true, timeout }))
+      ).headers["set-cookie"][0].split("=")[1])}` // Yep, we have to get a new cookie because apparently they expire?!
     },
 
     // timeout, // Surely if it doesn't respond after a minute, something's wrong?
@@ -74,8 +77,6 @@ let guide
 
 
 (async () => {
-  loginCookie = (await (axios.get(`${base}/UI/login`, { withCredentials: true, timeout }))).headers["set-cookie"][0].split("=")[1]
-
   // Don't use the following please
   // categories = (await axios.get("https://raw.githubusercontent.com/Jackett/Jackett/master/src/Jackett.Common/Models/TorznabCatType.cs")).data.split("\n").filter(a => a.includes("new TorznabCategory")).map(a => a.split("new TorznabCategory(")[1].split(",")).map(a => ({ [a[0]]: a[1].replaceAll(`");`, "").replaceAll(` "`, "") }))
 
@@ -221,8 +222,8 @@ io.on('connection', (socket) => {
   // Query route
   socket.on('query', async (msg) => {
     console.log("ID IS", socket.id)
-    io.to(socket.id).emit("result", await search(msg))
 
+    io.to(socket.id).emit("result", await search(msg))
   });
 });
 
@@ -276,8 +277,8 @@ let search = async (query) => {
       console.log("Successfully fetched results from Jackett backend!")
     }
     catch (error) {
-      console.log(error)
-      return { error, reply } // I have to be super careful to handle the various exceptions that can occur in the program otherwise I risk crashing if given malformed data from Jackett's backend
+      console.log(reply, error)
+      return ({ error, reply }) // I have to be super careful to handle the various exceptions that can occur in the program otherwise I risk crashing if given malformed data from Jackett's backend
     }
   }
 
