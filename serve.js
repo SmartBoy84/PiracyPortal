@@ -31,6 +31,10 @@ let timeout = 60 * 60 * 1000 // [minutes [seconds [milliseconds
 let base = "http://127.0.0.1:9117"
 let api = "api/v2.0"
 
+
+// TODO: only renew cookie when expiration is detected
+let getCook = async () => await ((await (axios.get(`${base}/UI/login`, { withCredentials: true, timeout }))).headers["set-cookie"][0].split("Jackett=")[1]) // Get a new cookie
+
 let source = axios.CancelToken.source()
 
 let fetch = async url => {
@@ -46,9 +50,7 @@ let fetch = async url => {
     url: `${base}/${api}/${url}`,
     method: "get",
     headers: {
-      Cookie: `jackett=${await ((
-        await (axios.get(`${base}/UI/login`, { withCredentials: true, timeout }))
-      ).headers["set-cookie"][0].split("=")[1])}` // Yep, we have to get a new cookie because apparently they expire?!
+      Cookie: `jackett=${await getCook()}` // Yep, we have to get a new cookie because apparently they expire?!
     },
 
     // timeout, // Surely if it doesn't respond after a minute, something's wrong?
@@ -257,6 +259,7 @@ let search = async (query) => {
       reply = await fetch(url)
       if (reply instanceof Error) throw "Error fetching data"
 
+      console.log(reply)
       reply = await (reply.data)
       if (reply instanceof Error) throw "Error parsing results"
 
