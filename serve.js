@@ -158,19 +158,16 @@ app.get("/api/info", (req, res) => res.json({ categories, indexers }))
 app.get("/api/guide", (req, res) => res.json(guide))
 
 app.get("/path/:id/:tracker/:name", async (req, res) => {
+
   let uri = `http://127.0.0.1:9117/dl/${req.params.tracker}/?jackett_apikey=${apiKey}&path=${req.params.id}`
-  console.log(uri)
+  let url
 
-  request({ method: "GET", uri, followRedirect: false }, async (err, reply, body) => {
-    if (err) {
-      console.log(err, "Error fetching download ;(")
-      res.send(err)
-    }
-    else {
-      let url
-      let found = true
+  try {
 
-      if (reply.statusCode == 302) { // if redirected to a magnet link
+    await request({ method: "GET", uri, followRedirect: false }, async (err, reply, body) => {
+      
+      if (err) { throw err }
+      else if (reply.statusCode == 302) { // if redirected to a magnet link
 
         url = reply.headers.location
         console.log("Jackett returned a magnet link!", url)
@@ -179,42 +176,30 @@ app.get("/path/:id/:tracker/:name", async (req, res) => {
       else if (reply.body) { // if data was returned then assume torrent file
 
         console.log("Jackett returned a torrent file!")
-        url = path.join(__dirname, torrentCache, `${req.params.name}.torrent`)
+        url = "/${torrentCache}/${req.params.name}.torrent"
 
         // Create torrentcache dir if non-existent
-        if (!fss.existsSync(path.join(__dirname, torrentCache))) {
-          await fs.mkdir(path.join(__dirname, torrentCache)).catch(e => {
-            console.log("Failed to create torrentcache dir")
-
-            res.send(e)
-            found = false
-          })
+        if (await fs.exists(path.join(__dirname, torrentCache))) {
+          await fs.mkdir(path.join(__dirname, torrentCache))
         }
 
-        if (!fss.existsSync(url)) {
+        if (!await fs.exists(path.join(__dirname, url))) {
+
           console.log("File not found in cache, downloading...")
+          await fs.writeFile(path.join(__dirname, url), reply.body)
 
-          await fs.writeFile(url, reply.body).catch(e => {
-            console.log("Failed to write torrent to disk")
-
-            res.send(e)
-            found = false
-          })
         }
       }
       else {
-        console.log('Ooodd, nothing was returned?')
-        res.send(reply)
+        console.log(reply.statusCode)
+        throw 'Ooodd, nothing was returned?'
       }
 
-      if (found == true) {
-        res.redirect(`/${torrentCache}/${req.params.name}.torrent`)
-      }
-    }
+      res.redirect(url)
+    })
+  }
+  catch (err) { res.send(err) }
 
-  })
-
-  console.log("Done fetching download")
 })
 
 io.on('connection', (socket) => {
@@ -227,11 +212,6 @@ io.on('connection', (socket) => {
     io.to(socket.id).emit("result", await search(msg))
   });
 });
-
-/* Troubleshooting guide: 
-Make sure the API key is correct
-Make sure that the Jackett backend is accessible
-*/
 
 let cache = {}
 
@@ -283,5 +263,9 @@ let search = async (query) => {
   }
 
   return reply
-
 }
+
+/* Troubleshooting guide: 
+Make sure the API key is correct
+Make sure that the Jackett backend is accessible
+*/
