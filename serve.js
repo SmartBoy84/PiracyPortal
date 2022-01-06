@@ -26,7 +26,7 @@ const io = new Server(server);
 
 // ---------------------------------------------------------
 
-let timeout = 60 * 60 * 1000 // [minutes [seconds [milliseconds
+let timeout = 60 * 60 * 1000 // [minutes [seconds [milliseconds [60 minutes]
 
 let base = "http://127.0.0.1:9117"
 let api = "api/v2.0"
@@ -35,14 +35,13 @@ let api = "api/v2.0"
 // TODO: only renew cookie when expiration is detected
 let getCook = async () => await ((await (axios.get(`${base}/UI/login`, { withCredentials: true, timeout }))).headers["set-cookie"][0].split("Jackett=")[1]) // Get a new cookie
 
-let source = axios.CancelToken.source()
-
 let fetch = async url => {
 
   // Apparently timeout in axios is reponse timeout not connection timeout
   // this means that it doesn't apply when GETting local IPs so one has to do this:
+  let source = axios.CancelToken.source()
 
-  setTimeout(() => {
+  let timer = setTimeout(() => {
     source.cancel();
   }, timeout);
 
@@ -58,7 +57,7 @@ let fetch = async url => {
     timeout
   }).catch(err => err)
 
-  clearTimeout(timeout)
+  clearTimeout(timer)
 
   return res
 }
@@ -259,7 +258,6 @@ let search = async (query) => {
       reply = await fetch(url)
       if (reply instanceof Error) throw "Error fetching data"
 
-      console.log(reply)
       reply = await (reply.data)
       if (reply instanceof Error) throw "Error parsing results"
 
@@ -280,7 +278,6 @@ let search = async (query) => {
       console.log("Successfully fetched results from Jackett backend!")
     }
     catch (error) {
-      console.log(reply, error)
       return ({ error, reply }) // I have to be super careful to handle the various exceptions that can occur in the program otherwise I risk crashing if given malformed data from Jackett's backend
     }
   }
