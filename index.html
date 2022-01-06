@@ -374,6 +374,10 @@
 
     // Getting results
     socket.on('result', (msg) => {
+        if (document.visibilityState != "visible") {
+            alert("Done fetching results!")
+        }
+
         console.log(msg)
 
         try {
