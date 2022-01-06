@@ -165,7 +165,7 @@ app.get("/path/:id/:tracker/:name", async (req, res) => {
   try {
 
     await request({ method: "GET", uri, followRedirect: false }, async (err, reply, body) => {
-      
+
       if (err) { throw err }
       else if (reply.statusCode == 302) { // if redirected to a magnet link
 
@@ -176,19 +176,15 @@ app.get("/path/:id/:tracker/:name", async (req, res) => {
       else if (reply.body) { // if data was returned then assume torrent file
 
         console.log("Jackett returned a torrent file!")
-        url = "/${torrentCache}/${req.params.name}.torrent"
+        url = `/${torrentCache}/${req.params.name}.torrent`
 
-        // Create torrentcache dir if non-existent
-        if (await fs.exists(path.join(__dirname, torrentCache))) {
-          await fs.mkdir(path.join(__dirname, torrentCache))
-        }
+        await fs.writeFile(path.join(__dirname, url), reply.body, { flag: 'wx', recursive: true }).catch(err => {
+          if (err.code == "EEXIST") {
+            console.log("Torrent found in cache!")
+          }
+          else { throw err }
+        })
 
-        if (!await fs.exists(path.join(__dirname, url))) {
-
-          console.log("File not found in cache, downloading...")
-          await fs.writeFile(path.join(__dirname, url), reply.body)
-
-        }
       }
       else {
         console.log(reply.statusCode)
