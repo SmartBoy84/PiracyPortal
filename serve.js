@@ -164,7 +164,12 @@ app.get("/path/:id/:tracker/:name", async (req, res) => {
 
   try {
 
-    await request({ method: "GET", uri, followRedirect: false }, async (err, reply, body) => {
+    await request({
+      method: "GET", uri,
+      followRedirect: false, // We don't want it to follow any redirects as one way could be a magnet link
+      encoding: null, // This prevents the module from decoding the data via unicode
+      gzip: true // Jackett (as many sites do) uses gzip compression
+    }, async (err, reply, body) => {
 
       if (err) { throw err }
       else if (reply.statusCode == 302) { // if redirected to a magnet link
@@ -173,16 +178,23 @@ app.get("/path/:id/:tracker/:name", async (req, res) => {
         console.log("Jackett returned a magnet link!", url)
 
       }
-      else if (reply.body) { // if data was returned then assume torrent file
+      else if (body) { // if data was returned then assume torrent file
 
         console.log("Jackett returned a torrent file!")
         url = `/${torrentCache}/${req.params.name}.torrent`
 
-        await fs.writeFile(path.join(__dirname, url), reply.body, { flag: 'wx', recursive: true }).catch(err => {
+        await fs.writeFile(path.join(__dirname, url), body,
+          {
+            flag: 'wx', // only creates a new file if it doesn't already exist
+            recursive: true // creates any subdirectories if needed
+          }
+        ).catch(err => {
+
           if (err.code == "EEXIST") {
             console.log("Torrent found in cache!")
           }
           else { throw err }
+
         })
 
       }
