@@ -229,13 +229,24 @@ let apiGen = (q) => `indexers/all/results?apikey=${apiKey}&Query=${q.query.toLow
 // Search query handler
 let search = async (query) => {
   console.log("Request for query", query)
+
+  let refresh // Hacky flag
+
+  if (query.query.slice(-2).toLowerCase() == "%z") {
+    console.log("Refresh search query!")
+
+    refresh = true
+    query.query = query.query.substring(0, query.query.length - 2)
+
+  }
+
   let url = apiGen(query)
 
   //http://192.168.0.241:9117/api/v2.0/indexers/all/results?apikey=j578nolvdu67rca6v8a3udxornucjiz9&Query=no%20way%20home&Category%5B%5D=2000&Category%5B%5D=2010&Category%5B%5D=2030&Category%5B%5D=2040&Category%5B%5D=2045&Category%5B%5D=2050&Category%5B%5D=2060&Category%5B%5D=2070&Tracker%5B%5D=1337x&Tracker%5B%5D=badasstorrents&Tracker%5B%5D=bitsearch&Tracker%5B%5D=kickasstorrents-to&Tracker%5B%5D=rarbg&Tracker%5B%5D=torrentparadise&Tracker%5B%5D=yts&_=1641222384604
 
   let reply
 
-  if (cache[url]) {
+  if (cache[url] && !refresh) {
     console.log("Found lying around in cache!")
 
     reply = cache[url]
