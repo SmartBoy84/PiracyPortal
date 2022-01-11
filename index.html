@@ -330,9 +330,10 @@
         let table = document.getElementById("results")
         table.innerHTML = ""
 
-        document.getElementById("resultcounter").textContent = `${searchResults.length} results found`
+        let count = searchResults.filter(a => !a.hidden).length
+        document.getElementById("resultcounter").textContent = `${count} results found`
 
-        if (searchResults.length > 0) {
+        if (count > 0) {
             let heading = table.insertRow(-1)
             Object.keys(handlers).forEach(a => heading.insertCell(-1).outerHTML = `<th><a href="javascript: void(0)" onclick="handle('${a}')">${a}</a></th>`)
 
@@ -346,9 +347,14 @@
         results.querySelectorAll("tr:not(:first-child)").forEach(a => a.remove())
 
         searchResults.forEach((a, i) => {
-            let row = results.insertRow(-1)
-            Object.values(handlers).forEach(b => row.insertCell(-1).innerHTML = `${b[0](a)}`)
+            if (!a.hidden) {
+
+                let row = results.insertRow(-1)
+                Object.values(handlers).forEach(b => row.insertCell(-1).innerHTML = `${b[0](a)}`)
+
+            }
         })
+
     }
 
     // Submit query
@@ -413,7 +419,14 @@
             submit()
         }
         else {
-            final.query = this.value.trim()
+            final.query = this.value.trim().toLowerCase()
+
+            if (searchResults && searchResults.length > 0) {
+
+                searchResults = searchResults.map(a => ({ ...a, hidden: final.query.split(" ").some(b => !a.Title.toLowerCase().includes((b.toLowerCase()))) }))
+                render()
+
+            }
         }
     })
 
@@ -428,15 +441,18 @@
             let currentIndexerName = a.getAttribute("section-name")
 
             a.querySelectorAll('button').forEach(b => {
+
                 if (
                     // Filter via indexers
-                    !(final.indexers.length == 0 || currentIndexerName.toLowerCase().includes(filterQ) ||
+                    !(
+                        (final.indexers.length == 0) ||
+                        (filterQ.length > 0 && currentIndexerName.toLowerCase().includes(filterQ)) ||
                         (currentIndexerID == "default" && filterQ.length == 0) || // ensure that all default categories are always displayed
                         (
                             final.indexers.includes(currentIndexerID) && // Don't show unless parent indexers is in final object
                             final.indexers.some(c => res.indexers.find(d => d.id == c).caps.some(e => e["ID"] == b.getAttribute("data-id")))
-                        ))) {
-
+                        )
+                    )) {
                     // If no indexer containing category is present then turn it off
                     if (!repetitions.includes(b.getAttribute("data-id")) && final.categories.includes(b.getAttribute("data-id"))) {
                         toggle("categories", b.getAttribute("data-id"))
@@ -474,6 +490,7 @@
                     )
                 ) {
                     b.style.display = "inline"
+
                     activated = true
                 }
                 else {
@@ -672,7 +689,7 @@
                     toggle("categories", b.getAttribute("data-id"))
                     b.style.backgroundColor = colors[0]
 
-                    filter()  // Incase some of the preemptively selected options aren't unique
+                    // filter()  // Incase some of the preemptively selected options aren't unique
                 }
             })
 
@@ -686,11 +703,11 @@
                 toggle("indexers", a.getAttribute("data-id"))
                 a.style.backgroundColor = colors[0]
 
-                filter()  // Incase some of the preemptively selected options aren't unique
+                // filter()  // Incase some of the preemptively selected options aren't unique
             }
         })
 
-
+        filter()  // Incase some of the preemptively selected options aren't unique
         console.log(final)
     })()
 
