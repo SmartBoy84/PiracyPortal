@@ -317,16 +317,18 @@
         ]
     }
 
+    // Trigger to remove all torrents with no seeds
     document.getElementById("resultcounter").onclick = function () {
         let tColor = "rgb(241, 189, 255)"
         let state = this.style.backgroundColor != tColor
 
         searchResults.forEach(a => a.hidden = state && a.Seeders == 0)
-        order()
+        render()
 
         this.style.backgroundColor = state ? tColor : ""
     }
 
+    // Handler for categories
     function handle(name) {
         results.querySelectorAll("th>a").forEach(a => a.style.backgroundColor = a.textContent == name ? colors[0 + handlers[name][1]] : "transparent") // set everything else to transparent and toggle chosen color
 
@@ -336,6 +338,7 @@
         order() // reorder table
     }
 
+    // Primary table render
     let render = () => {
         let table = document.getElementById("results")
         table.innerHTML = ""
@@ -353,6 +356,7 @@
         }
     }
 
+    // Secondary results renderer
     let order = () => {
         results.querySelectorAll("tr:not(:first-child)").forEach(a => a.remove())
 
