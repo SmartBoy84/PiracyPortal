@@ -223,7 +223,7 @@
             <div id="search">
                 <input type="text" id="query">
                 <button onclick="submit()">Search</button>
-                <span id="resultcounter" class="heading" style="font-size: 20px;"></span>
+                <button style="font-weight: 1000; display: none;" id="resultcounter" class="button"></button>
                 <button id="hide" showing="0">Show</button>
             </div>
 
@@ -317,6 +317,16 @@
         ]
     }
 
+    document.getElementById("resultcounter").onclick = function () {
+        let tColor = "rgb(241, 189, 255)"
+        let state = this.style.backgroundColor != tColor
+
+        searchResults.forEach(a => a.hidden = state && a.Seeders == 0)
+        order()
+
+        this.style.backgroundColor = state ? tColor : ""
+    }
+
     function handle(name) {
         results.querySelectorAll("th>a").forEach(a => a.style.backgroundColor = a.textContent == name ? colors[0 + handlers[name][1]] : "transparent") // set everything else to transparent and toggle chosen color
 
@@ -331,12 +341,12 @@
         table.innerHTML = ""
 
         let count = searchResults.filter(a => !a.hidden).length
-        document.getElementById("resultcounter").textContent = `${count} results found`
+        document.getElementById("resultcounter").textContent = `${count} results`
 
         if (count > 0) {
             let heading = table.insertRow(-1)
-            Object.keys(handlers).forEach(a => heading.insertCell(-1).outerHTML = `<th><a href="javascript: void(0)" onclick="handle('${a}')">${a}</a></th>`)
 
+            Object.keys(handlers).forEach(a => heading.insertCell(-1).outerHTML = `<th><a href="javascript: void(0)" onclick="handle('${a}')">${a}</a></th>`)
             Object.keys(handlers).forEach(a => handlers[a][1] = false)
 
             order()
@@ -401,6 +411,7 @@
                 searchResults[i].Category = cat.length > 0 ? cat : searchResults[i].Category
             }
 
+            document.getElementById("resultcounter").style.display = ""
             render()
         }
         catch (e) {
