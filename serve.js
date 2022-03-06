@@ -77,7 +77,7 @@ let indexers
 let guide
 
 
-(async () => {
+let configure = async () => {
   // Don't use the following please
   // categories = (await axios.get("https://raw.githubusercontent.com/Jackett/Jackett/master/src/Jackett.Common/Models/TorznabCatType.cs")).data.split("\n").filter(a => a.includes("new TorznabCategory")).map(a => a.split("new TorznabCategory(")[1].split(",")).map(a => ({ [a[0]]: a[1].replaceAll(`");`, "").replaceAll(` "`, "") }))
 
@@ -144,8 +144,8 @@ let guide
       Tracker: indexers.map(a => a.id)
     }
   ]
-})()
-
+}
+configure()
 
 server.listen(3004, () => console.log('listening on *:3000'));
 
@@ -153,7 +153,11 @@ server.listen(3004, () => console.log('listening on *:3000'));
 
 let apiKey = "j578nolvdu67rca6v8a3udxornucjiz9"
 
-app.get("/", (req, res) => res.sendFile(path.join(__dirname + "/index.html")))
+app.get("/", async (req, res) => {
+  await configure() // in case something changed on the backend sidecatg 
+  res.sendFile(path.join(__dirname + "/index.html"))
+})
+
 app.get("/api/info", (req, res) => res.json({ categories, indexers }))
 app.get("/api/guide", (req, res) => res.json(guide))
 
