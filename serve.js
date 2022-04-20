@@ -154,8 +154,13 @@ server.listen(3004, () => console.log('listening on *:3000'));
 let apiKey = "j578nolvdu67rca6v8a3udxornucjiz9"
 
 app.get("/", async (req, res) => {
-  await configure() // in case something changed on the backend sidecatg 
+  //await configure() // in case something changed on the backend side
   res.sendFile(path.join(__dirname + "/index.html"))
+})
+
+app.get("/rc", async (req, res) => {
+  await configure() // in case something changed on the backend side
+  res.send("Done!")
 })
 
 app.get("/api/info", (req, res) => res.json({ categories, indexers }))
