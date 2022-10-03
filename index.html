@@ -621,7 +621,7 @@
 
     (async () => {
 
-        res = (await (await fetch('https://piracy.gabba.ga/api/info')).json()) // Populate res object
+        res = (await (await fetch('./api/info')).json()) // Populate res object
         console.log(res)
 
         catNames = Object.values(res.categories).flat().filter(a => parseInt(a[1]) < 9000).reduce((a, c) => ({ ...(a == undefined ? {} : a), [c[1]]: c[0] }), {})
